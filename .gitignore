@@ -1,0 +1,12 @@
+# 运行时状态（hop.sh 审计日志、turns 存档）——机器本地，不进仓
+state/
+
+# pi 运行时
+.pi/
+
+# 未来 extension 的依赖与构建产物
+node_modules/
+dist/
+
+# macOS
+.DS_Store

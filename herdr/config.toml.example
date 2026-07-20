@@ -1,0 +1,19 @@
+# herdr-vessel 推荐配置（全部可选——herdr 零配置即可运行）
+# 放置位置: ~/.config/herdr/config.toml
+# 生效方式: herdr server reload-config
+# 完整默认值: herdr --default-config
+
+[update]
+# 更新通道。团队自动化场景建议 stable。
+channel = "stable"
+
+[terminal]
+# 手动新开 pane 时继承当前 pane 的 cwd。
+# 团队 pane 由 team-up.sh 显式 --cwd 指定，不受此项影响。
+new_cwd = "follow"
+
+[session]
+# herdr server 重启后，用 integration 上报的原生 session 引用恢复各 agent 会话。
+# 默认即 true，写在这里是显式声明——团队编排依赖它（server 重启不丢团队）。
+# 前提: herdr integration status 中 pi 为 current（pi >= v2 即支持恢复）。
+resume_agents_on_restore = true
