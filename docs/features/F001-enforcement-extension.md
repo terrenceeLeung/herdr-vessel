@@ -64,11 +64,15 @@ created: 2026-07-20
 
 **A3. hop 真熔断**。插件从 `state/<session>/routes.jsonl` 读计数，≥20 时 block 一切注入类调用，reason 写明"必须升船长"，直到出现 reset 标记。船长的任何输入仍由 `hop.sh reset` 清零（插件检测到 captain 输入事件时也可自动 reset——见 OQ-2）。
 
-### Phase B: 角色侧 handoff 形式校验
+### Phase B: 角色侧 handoff 校验 + outbox 精确导出
 
-`agent_end` 时取 `event.messages` 最后一条 assistant 消息文本，提取尾部 ` ```handoff ` block：
+`agent_end` 时取 `event.messages` 最后一条 assistant 消息文本，做两件事：
 
-- 无 block → 放行（合法，意为"需要船长"）；
+**B1. outbox 导出（精确内容层）**。将本棒完整文本（含 handoff block）写到 `$TEAM_HOME/state/<session>/outbox/<role>-<UTC>.md`，同时维护 `<role>-latest.md` 指针。orchestrator 的存档/handoff 提取改读 outbox——**精确、不啃 pi 内部格式、插件硬化不靠角色自觉**。`bin/session-leg.py`（直接解析会话 jsonl）降级为无插件环境的过渡方案。
+
+**B2. handoff 形式校验**。提取尾部 ` ```handoff ` block：
+
+- 无 block → 放行（合法，意为“需要船长”）；
 - 有 block 但畸形（缺必填字段 / `to` 越枚举 / YAML 不可解析 / 不在最末尾）→ 插件立即 `sendUserMessage` 注入打回话术（与 `contracts/handoff.md` 规定的原文一致），角色当轮补发，闭环不出 pane；
 - 同一 run 连续 2 次畸形 → 不再自动打回，留给 orchestrator 升船长（防插件-角色死循环）。
 
@@ -82,11 +86,12 @@ created: 2026-07-20
 - [ ] AC-A3: 计数 ≥20 后注入类调用被 block；`hop.sh reset` 后恢复
 - [ ] AC-A4: `TEAM_ROLE` 未设置时插件零行为（普通 pi 会话无感知）
 
-### Phase B（角色侧 handoff 校验）
+### Phase B（角色侧校验 + 导出）
 - [ ] AC-B1: 畸形 block 触发 pane 内即时打回，角色补发后 block 合格
 - [ ] AC-B2: 无 block 的输出不被打扰
 - [ ] AC-B3: 连续 2 次畸形后插件停止自动打回
 - [ ] AC-B4: 打回话术与 `contracts/handoff.md` 规定原文一致（单一真相源）
+- [ ] AC-B5: 角色完成一棒后，outbox 出现 `<role>-<ts>.md` 与 `<role>-latest.md`，内容与 assistant 原文逐字一致
 
 ## Dependencies
 
