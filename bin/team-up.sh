@@ -1,17 +1,22 @@
 #!/usr/bin/env bash
-# team-up.sh — 在当前 herdr 会话内拉起 herdr-vessel 的三个角色 pane
+# team-up.sh — 在当前 herdr 会话内拉起 herdr-vessel 团队（2×2 象限布局）
 #
 # 用法:
-#   team-up.sh [工作目录]     # 默认 = 当前目录；团队将在该目录的代码上工作
+#   team-up.sh [工作目录]     # 默认 = 当前目录；团队在该目录的代码上工作
+#
+# 布局（在你运行本脚本的那个 pane 所在 tab 上搭建）：
+#   ┌──────────────┬──────────────┐
+#   │ 当前 pane     │ first-mate   │
+#   │(orchestrator) │              │
+#   ├──────────────┼──────────────┤
+#   │chief-engineer│  reviewer    │
+#   └──────────────┴──────────────┘
+#   左上 = 调用者 pane（留给 orchestrator），其余三个象限按 roster.conf 顺序填角色。
 #
 # 前提:
 #   - 在 herdr 会话内运行（HERDR_ENV=1）
 #   - pi 在 PATH 上
-#   - 已安装 pi integration（herdr integration install pi），否则状态检测不准
-#
-# 每个角色 pane 的启动方式:
-#   pi --append-system-prompt <role SYSTEM.md> --skill <role skills 目录>
-# 并通过 --env TEAM_HOME=... 注入团队目录，供角色定位 contracts/ 与 shared/。
+#   - 已安装 pi integration（herdr integration install pi）
 set -euo pipefail
 
 TEAM_HOME="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -27,42 +32,72 @@ command -v pi    >/dev/null 2>&1 || { echo "错误: pi 不在 PATH" >&2; exit 1;
 ROSTER="$TEAM_HOME/roster.conf"
 [ -f "$ROSTER" ] || { echo "错误: 找不到花名册 $ROSTER" >&2; exit 1; }
 
-while read -r role model _rest; do
-  # 跳过注释与空行
+SELF_PANE="${HERDR_PANE_ID:?错误: 缺少 HERDR_PANE_ID（必须在 herdr pane 内运行）}"
+
+# 从 split 返回的 JSON 里提取新 pane_id
+new_pane_id() { grep -o '"pane_id":"[^"]*"' | head -1 | cut -d'"' -f4; }
+
+role_exists() { herdr agent get "$1" >/dev/null 2>&1; }
+
+# 读花名册（保持文件顺序）
+ROLES=()
+while read -r role _model _rest; do
   [[ -z "${role:-}" || "$role" == \#* ]] && continue
-  model="${model:--}"
-
-  if [ ! -f "$TEAM_HOME/role-packs/$role/SYSTEM.md" ]; then
-    echo "警告: role-packs/$role 不存在，跳过" >&2
-    continue
-  fi
-  if herdr agent get "$role" >/dev/null 2>&1; then
-    echo "· $role 已在场，跳过"
-    continue
-  fi
-
-  echo "+ 启动 ${role}（cwd=$CWD, model=${model}）"
-  pi_args=(
-    --append-system-prompt "$(cat "$TEAM_HOME/role-packs/$role/SYSTEM.md")"
-    --skill "$TEAM_HOME/role-packs/$role/skills"
-  )
-  [ "$model" != "-" ] && pi_args+=(--model "$model")
-
-  herdr agent start "$role" \
-    --cwd "$CWD" \
-    --split right --no-focus \
-    --env "TEAM_HOME=$TEAM_HOME" \
-    --env "TEAM_ROLE=$role" \
-    -- pi "${pi_args[@]}" \
-    >/dev/null
+  [ -f "$TEAM_HOME/role-packs/$role/SYSTEM.md" ] || { echo "警告: role-packs/$role 不存在，跳过" >&2; continue; }
+  ROLES+=("$role")
 done < "$ROSTER"
+
+# 统计缺员
+MISSING=()
+for role in "${ROLES[@]}"; do
+  if role_exists "$role"; then
+    echo "· $role 已在场，跳过"
+  else
+    MISSING+=("$role")
+  fi
+done
+
+if [ "${#MISSING[@]}" -eq 0 ]; then
+  echo "团队已齐整。"
+elif [ "${#MISSING[@]}" -eq "${#ROLES[@]}" ] && [ "${#ROLES[@]}" -eq 3 ]; then
+  # ── 首次启动（三角色全缺）：搭 2×2 象限 ──
+  echo "+ 搭建 2×2 布局（当前 pane = 左上/orchestrator 位）"
+  Q2=$(herdr pane split "$SELF_PANE" --direction right --no-focus | new_pane_id)
+  Q3=$(herdr pane split "$SELF_PANE" --direction down  --no-focus | new_pane_id)
+  Q4=$(herdr pane split "$Q2"        --direction down  --no-focus | new_pane_id)
+  QUADS=("$Q2" "$Q3" "$Q4")
+
+  for i in 0 1 2; do
+    role="${ROLES[$i]}"
+    pane="${QUADS[$i]}"
+    echo "+ 启动 $role → $pane"
+    herdr pane run "$pane" "cd $(printf '%q' "$CWD") && $(printf '%q' "$TEAM_HOME")/bin/role.sh $(printf '%q' "$role")" >/dev/null
+  done
+
+  echo "· 等角色会话就绪（15s）…"
+  sleep 15
+  for i in 0 1 2; do
+    herdr agent rename "${QUADS[$i]}" "${ROLES[$i]}" >/dev/null 2>&1 \
+      && echo "✓ ${ROLES[$i]} 已登记名册（${QUADS[$i]}）" \
+      || echo "⚠ ${ROLES[$i]} 登记失败，稍后可手动: herdr agent rename ${QUADS[$i]} ${ROLES[$i]}"
+  done
+else
+  # ── 补员模式：缺谁补谁（简单右分屏，布局自行调整） ──
+  for role in "${MISSING[@]}"; do
+    echo "+ 补员 $role（右分屏；如需象限布局，建议全关后重跑本脚本）"
+    NEW=$(herdr pane split "$SELF_PANE" --direction right --no-focus | new_pane_id)
+    herdr pane run "$NEW" "cd $(printf '%q' "$CWD") && $(printf '%q' "$TEAM_HOME")/bin/role.sh $(printf '%q' "$role")" >/dev/null
+    sleep 12
+    herdr agent rename "$NEW" "$role" >/dev/null 2>&1 || true
+  done
+fi
 
 cat <<EOF
 
-团队已就位。检查状态:
+检查状态:
   herdr agent list
 
-接下来在 orchestrator pane 启动调度器（详见 README.md「启动调度器」）:
+接下来在左上 pane 启动调度器（详见 README.md「启动调度器」）:
   cd $CWD
   export TEAM_HOME=$TEAM_HOME TEAM_ROLE=orchestrator
   pi --append-system-prompt "\$(cat \$TEAM_HOME/orchestrator/PROMPT.md)" \\
