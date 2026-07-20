@@ -56,7 +56,10 @@ async function paneStatus(target) {
 
 async function agentNameOf(target) {
   const out = await sh("herdr", ["pane", "get", target]);
-  return out.match(/"agent"\s*:\s*"([^"]+)"/)?.[1] ?? target;
+  // 自定义名册名在 label 字段（agent rename 设置）；为空则退回检测标签
+  return out.match(/"label"\s*:\s*"([^"]+)"/)?.[1]
+      ?? out.match(/"agent"\s*:\s*"([^"]+)"/)?.[1]
+      ?? target;
 }
 
 async function hopCount() {
