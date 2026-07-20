@@ -8,7 +8,7 @@ created: 2026-07-20
 
 # F001: herdr-vessel 强制执行插件（pi extension）
 
-> **Status**: spec | **Owner**: tianyiliang | **Priority**: P1
+> **Status**: in-progress | **Owner**: tianyiliang | **Priority**: P1
 
 ## CVO Page（CVO 验收层）
 
@@ -125,7 +125,8 @@ created: 2026-07-20
 
 | 日期 | 事件 |
 |------|------|
-| 2026-07-20 | 立项（spec 落盘，待 CVO 签字） |
+| 2026-07-20 | 立项（spec 落盘） |
+| 2026-07-20 | CVO 口头放行（"按你说的来"），Phase A 代码落地并推送（commit cae0ca5），待真机验收 AC-A1~A4 |
 
 ## Review Gate
 
