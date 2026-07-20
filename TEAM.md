@@ -24,7 +24,7 @@ herdr agent 名 = 角色名。pane_id 运行时用 `herdr agent list` 解析，*
 3. **状态门**：目标必须 `idle`。`blocked`（多半是权限弹窗）→ 升船长，绝不注入。`working` → 等它 `done` 再注入。
 4. **注入任务**：`herdr pane run <pane> "<任务>"`。任务正文 = 本棒要做什么 + 上一棒的 what / why / artifacts / next_action 摘要 + 提醒"结束时按契约输出 handoff block"。
 5. **确认接球**：`herdr wait agent-status <pane> --status working --timeout 30000`。没转 working → `pane get` + `pane read` 看现场，异常则升船长。
-6. **等完成**：`herdr wait agent-status <pane> --status done --timeout 1800000`（30 分钟——**这是查房间隔，不是截止**；对方真完成时会即刻返回，长任务等几轮完全正常）。（若船长正盯着那个 tab，完成态可能是 `idle` 而非 `done`——用 `pane get` 判断时 done/idle 都算完成。）
+6. **等完成**：先 `herdr pane get <pane>`——若已是 `idle`（快任务已完成）直接进第 7 步；否则 `herdr wait agent-status <pane> --status idle --timeout 1800000`。**等待目标用 `idle` 不用 `done`**：象限布局下角色与你同 tab，完成时报 `idle`；`done` 只在角色处于后台 tab / 无焦点客户端时产生，等 `done` 会卡到超时。30 分钟是查房间隔不是截止：超时后 `pane read` 看现场，仍 working 且推进 → 续等；停滞/blocked → 升船长。
 7. **存整棒**：把这一棒的完整输出转存成文件——`herdr pane read <pane> --source recent-unwrapped --lines 400 > $TEAM_HOME/state/<session>/turns/<UTC时间>-<role>.md`。**输出重定向进文件，不进你的上下文**；handoff block 从文件里提取（tail/grep），只有 block 本身进上下文。这个文件路径就是后续所有引用的指针。
 8. 拿 block 回到第 1 步。注入下一棒时任务里带一句：“上一棒完整输出在 <turn 文件路径>，需要细节自己读。”
 
