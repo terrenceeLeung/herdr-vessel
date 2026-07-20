@@ -52,6 +52,7 @@ while read -r role model _rest; do
     --cwd "$CWD" \
     --split right --no-focus \
     --env "TEAM_HOME=$TEAM_HOME" \
+    --env "TEAM_ROLE=$role" \
     -- pi "${pi_args[@]}" \
     >/dev/null
 done < "$ROSTER"
@@ -63,7 +64,7 @@ cat <<EOF
 
 接下来在 orchestrator pane 启动调度器（详见 README.md「启动调度器」）:
   cd $CWD
-  export TEAM_HOME=$TEAM_HOME
+  export TEAM_HOME=$TEAM_HOME TEAM_ROLE=orchestrator
   pi --append-system-prompt "\$(cat \$TEAM_HOME/orchestrator/PROMPT.md)" \\
      --skill "\$TEAM_HOME/orchestrator/skills/herdr"
 
