@@ -41,7 +41,7 @@ while read -r role model _rest; do
     continue
   fi
 
-  echo "+ 启动 $role（cwd=$CWD, model=$model）"
+  echo "+ 启动 ${role}（cwd=$CWD, model=${model}）"
   pi_args=(
     --append-system-prompt "$(cat "$TEAM_HOME/role-packs/$role/SYSTEM.md")"
     --skill "$TEAM_HOME/role-packs/$role/skills"
