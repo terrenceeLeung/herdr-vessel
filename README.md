@@ -66,18 +66,9 @@ herdr integration install pi
 herdr integration status   # 确认 pi: current
 ```
 
-### 3. herdr skill：已 vendor 进项目，只挂给 orchestrator
+### 3. herdr skill：编排专用定制版，只挂给 orchestrator
 
-**不要用** `npx skills add ogulcancelik/herdr -g`：`-g` 装进 `~/.pi/agent/skills/`，那是**本机所有 pi 会话共享**的目录——三个角色 pane 也是 pi，照样会看到 skill，"角色是哑终端"就破了。`skills add` 不加 `-g` 也不合适：它会把整个 herdr 仓库（Rust 源码 + vendor）拖进项目，而 skill 本体只有一个 `SKILL.md`。
-
-所以本项目把 skill 单文件 vendor 在 `orchestrator/skills/herdr/SKILL.md`，启动 orchestrator 时用 pi 的 `--skill` 显式挂载；角色 pane 的启动命令（`team-up.sh`）里没有它——**物理隔离，不是纪律隔离**。
-
-升级 skill 时重新下载即可：
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/ogulcancelik/herdr/master/SKILL.md \
-  -o ~/projects/herdr-vessel/orchestrator/skills/herdr/SKILL.md
-```
+`orchestrator/skills/herdr/SKILL.md` 是 **herdr-vessel 定制版**（不是 herdr 上游 skill）：只教四件事——查花名册/状态、发任务（`pane run`）、等完成事件（`wait agent-status`）、从 outbox 取内容。**明确不教读屏幕**（内容通道不走终端，见 F001 KD-8）。启动 orchestrator 时用 `--skill` 显式挂载；角色 pane 的启动命令里没有它——**物理隔离，不是纪律隔离**。
 
 ### 4. Herdr 配置（可选）
 
