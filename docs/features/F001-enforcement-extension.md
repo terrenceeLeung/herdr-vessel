@@ -68,7 +68,7 @@ created: 2026-07-20
 
 `agent_end` 时取 `event.messages` 最后一条 assistant 消息文本，做两件事：
 
-**B1. outbox 导出（精确内容层）**。将本棒完整文本（含 handoff block）写到 `$TEAM_HOME/state/<session>/outbox/<role>-<UTC>.md`，同时维护 `<role>-latest.md` 指针。orchestrator 的存档/handoff 提取改读 outbox——**精确、不啃 pi 内部格式、插件硬化不靠角色自觉**。`bin/session-leg.py`（直接解析会话 jsonl）降级为无插件环境的过渡方案。
+**B1. outbox 导出（精确内容层）**。将本棒完整文本（含 handoff block）写到 `$TEAM_HOME/state/<herdr-session>/outbox/<crew>/<UTC>.md`（每棒新建不覆盖），并刷新同目录 `latest.md`。插件从 `HERDR_SOCKET_PATH` 推导 session 名（与 hop.sh 同逻辑）。同一刻向 `routes.jsonl` 追加 `{"type":"leg_complete","role":...,"ts":...,"outbox":"..."}`，与 orch 的 route 事件按时间线天然关联。orchestrator 读 `latest.md`（校验 mtime ≥ 注入时间防陈旧件）——**精确、不啃 pi 内部格式、插件硬化不靠角色自觉**。时序保障：integration 的 idle 上报在 `agent_end` 后 250ms 防抖，插件在同一事件 drain 内 `writeFileSync` 同步落盘，必然先于 orch 被唤醒。`bin/session-leg.py`（直接解析会话 jsonl）与 `bin/archive-turn.sh` 降级为无插件环境的备胎。**注入不再携带 leg 标记**（KD-6）。
 
 **B2. handoff 形式校验**。提取尾部 ` ```handoff ` block：
 
@@ -91,7 +91,7 @@ created: 2026-07-20
 - [ ] AC-B2: 无 block 的输出不被打扰
 - [ ] AC-B3: 连续 2 次畸形后插件停止自动打回
 - [ ] AC-B4: 打回话术与 `contracts/handoff.md` 规定原文一致（单一真相源）
-- [ ] AC-B5: 角色完成一棒后，outbox 出现 `<role>-<ts>.md` 与 `<role>-latest.md`，内容与 assistant 原文逐字一致
+- [ ] AC-B5: 角色完成一棒后，`outbox/<crew>/` 出现 `<UTC>.md` 与 `latest.md`，内容与 assistant 原文逐字一致；`routes.jsonl` 出现对应 `leg_complete` 事件
 
 ## Dependencies
 
@@ -125,7 +125,7 @@ created: 2026-07-20
 | KD-2 | 插件只做形式执法，不做语义判断 | F027 KD-11：意义只能推理时刻判出；机制管形状，prompt 管语义 | 2026-07-20 |
 | KD-3 | 审计走"观察 tool_result 推导"，不走"要求 orchestrator 自报" | ADR-027 同源：caller 自报不可信；观察到的行为才是真相 | 2026-07-20 |
 | KD-4 | hop.sh 继续作为存储/计数底座，插件复用而非重写 | 已实测正确；单一存储真相源，prompt 层与插件层写同一本账 | 2026-07-20 |
-| KD-5 | Phase B 后：archive-turn.sh 退役为备胎；leg 标记保留但降级为“审计关联 ID”（不再是裁剪切分点） | 插件写的就是本棒，无需裁剪；标记保留用于防陈旧件对账与 routes.jsonl↔outbox 关联，成本约零 | 2026-07-20 |
+| KD-5 | Phase B 后：archive-turn.sh 退役为备胎；leg 标记随之一并退役——曾被降级为“审计关联 ID”，最终确认无必要 | 插件写的就是本棒，无需裁剪切分点；关联改由 leg_complete 事件（时间线相邻）+ mtime 校验承担，标记彻底多余（修正：本条推翻了上一版“保留标记”的结论，CVO 推动） | 2026-07-20 |
 
 ## Timeline
 
