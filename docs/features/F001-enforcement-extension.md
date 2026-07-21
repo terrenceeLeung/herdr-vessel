@@ -70,8 +70,9 @@ created: 2026-07-20
 
 **B1. outbox 导出（精确内容层）**。将本棒完整文本（含 handoff block）写到 `$TEAM_HOME/state/<herdr-session>/outbox/<crew>/<UTC>.md`（每棒新建不覆盖），并刷新同目录 `latest.md`。插件从 `HERDR_SOCKET_PATH` 推导 session 名（与 hop.sh 同逻辑）。同一刻向 `routes.jsonl` 追加 `{"type":"leg_complete","role":...,"ts":...,"outbox":"..."}`，与 orch 的 route 事件按时间线天然关联。orchestrator 读 `latest.md`（校验 mtime ≥ 注入时间防陈旧件）——**精确、不啃 pi 内部格式、插件硬化不靠角色自觉**。时序保障：integration 的 idle 上报在 `agent_end` 后 250ms 防抖，插件在同一事件 drain 内 `writeFileSync` 同步落盘，必然先于 orch 被唤醒。`bin/session-leg.py`（直接解析会话 jsonl）与 `bin/archive-turn.sh` 降级为无插件环境的备胎。**注入不再携带 leg 标记**（KD-6）。
 
-**B2. handoff 形式校验**。提取尾部 ` ```handoff ` block：
+**B2. handoff 形式校验**。从 `event.messages` 中按“最后一条含 text 且不含 toolCall 的 assistant 消息”取最终回复（无 toolCall 的 assistant 消息必然是该 run 的最后一条——没有工具结果喂回，loop 必然终止），提取尾部 ` ```handoff ` block：
 
+- 最后一条 assistant 消息 `stopReason !== "stop"`（abort/error 中断）→ **不校验不导出**（B1 同样跳过）：outbox 保持陈旧，orch 的 mtime 校验会判定“无新件”并升船长——失败方向安全；
 - 无 block → 放行（合法，意为“需要船长”）；
 - 有 block 但畸形（缺必填字段 / `to` 越枚举 / YAML 不可解析 / 不在最末尾）→ 插件立即 `sendUserMessage` 注入打回话术（与 `contracts/handoff.md` 规定的原文一致），角色当轮补发，闭环不出 pane；
 - 同一 run 连续 2 次畸形 → 不再自动打回，留给 orchestrator 升船长（防插件-角色死循环）。
