@@ -84,7 +84,7 @@ created: 2026-07-20
 ### Phase A（Orchestrator 侧三件套）
 - [ ] AC-A1: 目标 pane 为 blocked/working 时，`herdr pane run` 被 block 且 reason 可读；idle 时放行
 - [ ] AC-A2: orchestrator 不调 hop.sh 的情况下完成一次路由，routes.jsonl 出现对应 route/rework 记录且字段完整（from/to/pane/session）
-- [ ] AC-A3: 计数 ≥20 后注入类调用被 block；`hop.sh reset` 后恢复
+- [ ] AC-A3: 回边计数 ≥20 后注入类调用被 block；船长任意输入（插件自动 reset）后恢复。**验收路径**（KD-9 语义 A）：真实路由中段从 shell 刷计数，期间不得与 orch 对话（说话即清零）
 - [ ] AC-A4: `TEAM_ROLE` 未设置时插件零行为（普通 pi 会话无感知）
 
 ### Phase B（角色侧校验 + 导出）
@@ -140,6 +140,7 @@ created: 2026-07-20
 | 2026-07-20 | CVO 口头放行（"按你说的来"），Phase A 代码落地并推送（commit cae0ca5），待真机验收 AC-A1~A4 |
 | 2026-07-20 | Phase A 验收：修 label 解析/接球竞态/done-idle 等待；熔断语义待 CVO 拍板 |
 | 2026-07-20 | Phase B 设计定稿（KD-5~KD-8：弃 leg 标记、latest-only、message_end 挂钩、删 turns 机制、skill 保留上游原版） |
+| 2026-07-20 | 熔断语义定案（KD-9 选项 A：船长任何输入清零）；TEAM.md hop 节同步瘦身（机制归插件，文档只留应对动作） |
 
 ## Review Gate
 
