@@ -68,7 +68,7 @@ created: 2026-07-20
 
 `agent_end` 时取 `event.messages` 最后一条 assistant 消息文本，做两件事：
 
-**B1. outbox 导出（精确内容层）**。将本棒完整文本（含 handoff block）写到 `$TEAM_HOME/state/<herdr-session>/outbox/<crew>/<UTC>.md`（每棒新建不覆盖），并刷新同目录 `latest.md`。插件从 `HERDR_SOCKET_PATH` 推导 session 名（与 hop.sh 同逻辑）。同一刻向 `routes.jsonl` 追加 `{"type":"leg_complete","role":...,"ts":...,"outbox":"..."}`，与 orch 的 route 事件按时间线天然关联。orchestrator 读 `latest.md`（校验 mtime ≥ 注入时间防陈旧件）——**精确、不啃 pi 内部格式、插件硬化不靠角色自觉**。时序保障：integration 的 idle 上报在 `agent_end` 后 250ms 防抖，插件在同一事件 drain 内 `writeFileSync` 同步落盘，必然先于 orch 被唤醒。`bin/session-leg.py`（直接解析会话 jsonl）与 `bin/archive-turn.sh` 降级为无插件环境的备胎。**注入不再携带 leg 标记**（KD-6）。
+**B1. outbox 导出（精确内容层）**。将**最终回复**（最后一条含 text 且无 toolCall 的 assistant 消息的全文，含 handoff block）写到 `$TEAM_HOME/state/<herdr-session>/outbox/<crew>/<UTC>.md`（每棒新建不覆盖），并刷新同目录 `latest.md`。**只存最终回复，不存整棒 transcript**——整棒由 pi session 文件天然承担，`routes.jsonl` 的 `from_session` 已索引其路径，不重复存储（KD-6）。插件从 `HERDR_SOCKET_PATH` 推导 session 名（与 hop.sh 同逻辑）。同一刻向 `routes.jsonl` 追加 `{"type":"leg_complete","role":...,"ts":...,"outbox":"..."}`，与 orch 的 route 事件按时间线天然关联。orchestrator 读 `latest.md`（校验 mtime ≥ 注入时间防陈旧件）——**精确、不啃 pi 内部格式、插件硬化不靠角色自觉**。时序保障：integration 的 idle 上报在 `agent_end` 后 250ms 防抖，插件在同一事件 drain 内 `writeFileSync` 同步落盘，必然先于 orch 被唤醒。`bin/session-leg.py` 与 `bin/archive-turn.sh` 降级为无插件环境的备胎。**注入不再携带 leg 标记**（KD-5）。
 
 **B2. handoff 形式校验**。从 `event.messages` 中按“最后一条含 text 且不含 toolCall 的 assistant 消息”取最终回复（无 toolCall 的 assistant 消息必然是该 run 的最后一条——没有工具结果喂回，loop 必然终止），提取尾部 ` ```handoff ` block：
 
@@ -127,6 +127,7 @@ created: 2026-07-20
 | KD-3 | 审计走"观察 tool_result 推导"，不走"要求 orchestrator 自报" | ADR-027 同源：caller 自报不可信；观察到的行为才是真相 | 2026-07-20 |
 | KD-4 | hop.sh 继续作为存储/计数底座，插件复用而非重写 | 已实测正确；单一存储真相源，prompt 层与插件层写同一本账 | 2026-07-20 |
 | KD-5 | Phase B 后：archive-turn.sh 退役为备胎；leg 标记随之一并退役——曾被降级为“审计关联 ID”，最终确认无必要 | 插件写的就是本棒，无需裁剪切分点；关联改由 leg_complete 事件（时间线相邻）+ mtime 校验承担，标记彻底多余（修正：本条推翻了上一版“保留标记”的结论，CVO 推动） | 2026-07-20 |
+| KD-6 | outbox 只存最终回复（最后一条 assistant 消息），不存整棒 transcript | orch 路由只解析最后一条；整棒由 pi session 文件天然承担且 routes.jsonl 的 from_session 已索引路径——“内容带全”用指针满足，不复制第二份真相（CVO 拍板） | 2026-07-20 |
 
 ## Timeline
 
