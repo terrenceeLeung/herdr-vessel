@@ -10,7 +10,6 @@
 # 用法:
 #   hop.sh route|incr --from R --to R [--what ".."] [--why ".."] [--artifacts ".."]
 #                     [--open-questions ".."] [--next-action ".."] [--trade-off ".."]
-#                     [--turn <存档文件路径>]
 #   hop.sh reset [原因]     # 船长输入后清零；同时追加一条 roster 元数据快照
 #   hop.sh count            # 打印当前计数
 set -euo pipefail
@@ -60,7 +59,7 @@ cmd="${1:-}"
 case "$cmd" in
   route|incr)
     shift
-    from="" to="" what="" why="" artifacts="" oq="" next="" tradeoff="" turn=""
+    from="" to="" what="" why="" artifacts="" oq="" next="" tradeoff=""
     while [ $# -gt 0 ]; do
       case "$1" in
         --from)           from="$2";      shift 2;;
@@ -71,18 +70,17 @@ case "$cmd" in
         --open-questions) oq="$2";        shift 2;;
         --next-action)    next="$2";      shift 2;;
         --trade-off)      tradeoff="$2";  shift 2;;
-        --turn)           turn="$2";      shift 2;;
         *) echo "未知参数: $1" >&2; exit 2;;
       esac
     done
     [ -n "$from" ] && [ -n "$to" ] || { echo "route/incr 需要 --from 和 --to" >&2; exit 2; }
     [ "$cmd" = incr ] && type="rework" || type="route"
-    printf '{"type":"%s","ts":"%s","session":"%s","from":"%s","from_pane":"%s","from_session":"%s","to":"%s","to_pane":"%s","to_session":"%s","what":"%s","why":"%s","artifacts":"%s","open_questions":"%s","next_action":"%s","trade_off":"%s","turn":"%s"}\n' \
+    printf '{"type":"%s","ts":"%s","session":"%s","from":"%s","from_pane":"%s","from_session":"%s","to":"%s","to_pane":"%s","to_session":"%s","what":"%s","why":"%s","artifacts":"%s","open_questions":"%s","next_action":"%s","trade_off":"%s"}\n' \
       "$type" "$(date -u +%FT%TZ)" "$SESSION" \
       "$(esc "$from")" "$(pane_of "$from")" "$(session_of "$from")" \
       "$(esc "$to")" "$(pane_of "$to")" "$(session_of "$to")" \
       "$(esc "$what")" "$(esc "$why")" "$(esc "$artifacts")" "$(esc "$oq")" \
-      "$(esc "$next")" "$(esc "$tradeoff")" "$(esc "$turn")" >> "$LOG"
+      "$(esc "$next")" "$(esc "$tradeoff")" >> "$LOG"
     count_since_reset
     ;;
   reset)

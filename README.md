@@ -46,7 +46,7 @@ herdr-vessel/
 ├── bin/
 │   ├── team-up.sh             ← 一键拉起全队（2×2 象限布局，读 roster.conf；幂等/补员）
 │   ├── role.sh                ← 单角色启动器（手动布局后补位用）
-│   └── hop.sh                 ← hop 计数 + 路由审计（state/<herdr-session>/routes.jsonl + turns/ 存档）
+│   └── hop.sh                 ← hop 计数 + 路由审计（state/<herdr-session>/routes.jsonl）
 └── herdr/
     └── config.toml.example    ← herdr 可选配置
 ```

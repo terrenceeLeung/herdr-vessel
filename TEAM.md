@@ -22,11 +22,11 @@ herdr agent 名 = 角色名。pane_id 运行时用 `herdr agent list` 解析，*
 1. **校验**：按 `contracts/handoff.md` 校验当前 handoff block。无效 → 打回重发；同棒两次无效 → 升船长。
 2. **解析目标**：`herdr agent list` 按名字找到目标 pane；`herdr pane get <pane>` 确认状态。
 3. **状态门**：目标必须 `idle`。`blocked`（多半是权限弹窗）→ 升船长，绝不注入。`working` → 等它 `done` 再注入。
-4. **注入任务**：先生成本棒标记 `<!-- leg:<UTC时间戳> -->`（每棒唯一），`herdr pane run <pane> "<leg 标记>\n<任务>"`。任务正文 = 本棒要做什么 + 上一棒的 what / why / artifacts / next_action 摘要 + 上一棒 turn 存档路径（需要细节自己读）+ 提醒“结束时按契约输出 handoff block”。leg 标记用于第 7 步裁剪存档。
+4. **注入任务**：`herdr pane run <pane> "<任务>"`。任务正文 = 本棒要做什么 + 上一棒的 what / why / artifacts / next_action 摘要 + 提醒“结束时按契约输出 handoff block”。
 5. **确认接球**：先 `herdr pane get <pane>`——`working` → 进第 6 步；`idle` → 两种可能：快任务已完成（working 一闪而过）或还没启动。`pane read` 看有没有针对本任务的新输出：有 → 直接进第 7 步；没有 → 等几秒再 `pane get` 复查一次，仍无动静 → 升船长。**不要**用 `wait --status working` 当接球确认：快任务会在你的 wait 订阅之前就走完 working→idle，空等到超时。
 6. **等完成**：先 `herdr pane get <pane>`——若已是 `idle`（快任务已完成）直接进第 7 步；否则 `herdr wait agent-status <pane> --status idle --timeout 1800000`。**等待目标用 `idle` 不用 `done`**：象限布局下角色与你同 tab，完成时报 `idle`；`done` 只在角色处于后台 tab / 无焦点客户端时产生，等 `done` 会卡到超时。30 分钟是查房间隔不是截止：超时后 `pane read` 看现场，仍 working 且推进 → 续等；停滞/blocked → 升船长。
-7. **存整棒**：`$TEAM_HOME/bin/archive-turn.sh <pane> <role> "<!-- leg:...>"` ——按 leg 标记裁剪出**本棒**内容，落盘 `state/<session>/turns/` 并打印路径。保真度两层自动选择：**优先从 pi 会话文件提取（结构化消息原文，与 assistant 输出一字不差）**；非 pi 角色或会话文件不可用时降级为终端 scrollback（渲染近似）。全程不进你的上下文；handoff block 从存档提取（tail/grep），只有 block 本身进上下文。
-8. 拿 block 回到第 1 步。注入下一棒时任务里带一句：“上一棒完整输出在 <turn 文件路径>，需要细节自己读。”
+7. **取件**：角色侧插件已把最终回复写入 `$TEAM_HOME/state/<herdr-session>/outbox/<role>/latest.md`（assistant 原文，逐字精确，原子覆写）。读它——**先校验 mtime ≥ 本棒注入时间**（陈旧 = 插件未生效或 run 异常中断，升船长）。handoff block 从该文件提取，只有 block 进你的上下文。
+8. 拿 block 回到第 1 步。
 
 ## hop 预算（防乒乓）——硬机制，无需你操作
 
