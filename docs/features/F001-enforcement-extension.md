@@ -141,6 +141,7 @@ created: 2026-07-20
 | 2026-07-20 | Phase A 验收：修 label 解析/接球竞态/done-idle 等待；熔断语义待 CVO 拍板 |
 | 2026-07-20 | Phase B 设计定稿（KD-5~KD-8：弃 leg 标记、latest-only、message_end 挂钩、删 turns 机制、skill 保留上游原版） |
 | 2026-07-20 | 熔断语义定案（KD-9 选项 A：船长任何输入清零）；TEAM.md hop 节同步瘦身（机制归插件，文档只留应对动作） |
+| 2026-07-20 | **Phase B 代码落地**（commit 5d9427e）：角色侧 message_end 导出 + 校验打回；KD-7 清理同步完成（删 archive-turn/session-leg/--turn），调度文档切换 outbox 流。待真机验收 AC-B1~B5 |
 
 ## Review Gate
 
