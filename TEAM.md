@@ -28,26 +28,17 @@ herdr agent 名 = 角色名。pane_id 运行时用 `herdr agent list` 解析，*
 7. **存整棒**：`$TEAM_HOME/bin/archive-turn.sh <pane> <role> "<!-- leg:...>"` ——按 leg 标记裁剪出**本棒**内容，落盘 `state/<session>/turns/` 并打印路径。保真度两层自动选择：**优先从 pi 会话文件提取（结构化消息原文，与 assistant 输出一字不差）**；非 pi 角色或会话文件不可用时降级为终端 scrollback（渲染近似）。全程不进你的上下文；handoff block 从存档提取（tail/grep），只有 block 本身进上下文。
 8. 拿 block 回到第 1 步。注入下一棒时任务里带一句：“上一棒完整输出在 <turn 文件路径>，需要细节自己读。”
 
-## hop 预算（防乒乓）
+## hop 预算（防乒乓）——硬机制，无需你操作
 
-只数**回边（返工）**——正向流转是健康推进，不计数、不消耗预算。边表：
+返工计数与熔断已由执法插件硬化，**你不需要手动记帐**：
 
-| 边 | 性质 |
-|---|---|
-| first-mate → chief-engineer、chief-engineer → reviewer、任何 → captain | 正向，不计数 |
-| reviewer → chief-engineer（打回修改）、chief-engineer → first-mate（工程证据暴露产品问题）、reviewer → first-mate（产品漂移） | **回边，计数** |
+- 边表（哪些边算回边）在 `routing.conf`（机器可读，唯一拓扑真相源；本表不重复）；
+- 插件观察你的注入**自动记帐**（写 `state/<herdr-session>/routes.jsonl`，含双方 pane/session 引用）；
+- 回边计数 **≥20 时插件硬拦你的注入**，reason 会告诉你计数已满；
+- 船长的任何输入**自动清零**（语义：你在场即保险丝，见 F001 KD-9）。
 
-**hop = 自上次船长输入以来的回边次数，预算 20。** 船长的任何输入（派活、裁决、干预）都是人工保险丝，计数清零。
+**你要做的只有一件**：熔断触发（注入被 block、reason 含返工计数）→ 停止自动路由，向船长汇报三样——谁在跟谁打乒乓、争议点是什么、你的判断。船长输入后计数自动清零，恢复路由。
 
-记帐方式（按 herdr session 分目录，持久化、重启不丢）：
-
-- 正向路由后：`$TEAM_HOME/bin/hop.sh route --from <R> --to <R> --what ".." --why ".." --artifacts ".." --next-action ".." --turn <存档文件>`（只审计）；
-- 回边路由后：同参数用 `incr`（审计 + 计数，返回当前值）；
-- 船长输入后：`$TEAM_HOME/bin/hop.sh reset "<原因>"`（同时落一条 roster 元数据快照：pane/terminal/agent_session 等）；
-- 每条 route/rework 事件自动附带双方 `pane_id` 与 **pi session 文件路径**（`from_session`/`to_session`，hop.sh 调 `herdr agent get` 实时解析）——从日志可直接定位产出那一棒的 pi 会话原文。
-- 存储：`$TEAM_HOME/state/<herdr-session>/routes.jsonl` + `turns/`。
-
-**hop ≥ 20 → 停止路由**，向船长汇报：谁在跟谁乒乓、争议点是什么、你的判断。由人裁决。
 
 ## 超时与异常
 

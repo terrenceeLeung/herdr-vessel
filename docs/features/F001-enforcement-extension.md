@@ -130,6 +130,7 @@ created: 2026-07-20
 | KD-6 | outbox 只存最终回复（最后一条 assistant 消息），不存整棒 transcript | orch 路由只解析最后一条；整棒由 pi session 文件天然承担且 routes.jsonl 的 from_session 已索引路径——“内容带全”用指针满足，不复制第二份真相（CVO 拍板） | 2026-07-20 |
 | KD-7 | 进一步收窄：outbox 只留 latest.md；挂钩从 agent_end 改为 message_end + stopReason==="stop" 过滤；turns/、archive-turn.sh、session-leg.py、hop.sh --turn 全部删除 | scope 收窄到最终回复后 message_end 才是正确挂钩（stopReason 过滤天然排除 toolUse/aborted/error）；按棒归档与 turns 都是对 session 文件的重复存储；原子写（tmp+rename）防半截读（CVO 三连 push back） | 2026-07-20 |
 | KD-8 | orchestrator 的 herdr skill **保留上游原版**，使用政策写在 PROMPT.md（当日曾裁剪为定制版，同日推翻） | 政策不靠删手册执行——prompt 纪律 + 插件门禁才是执法者；原版是完整 API 参照与异常逃生舱，且可随上游刷新免于维护 fork（CVO 推翻裁剪决定） | 2026-07-20 |
+| KD-9 | 熔断 reset 语义选 A：船长**任何输入**清零；机制语义不写进 TEAM.md，只留 orchestrator 的应对动作 | 船长在场即保险丝，乒乓只在无人监督时有危害；B（语义区分输入类型）机械不可行，C（退回 prompt 纪律）违背硬化方向。机制已硬化（插件门禁+自动 reset+自动记帐），文档只写“熔断触发时怎么办”，不写机制，避免重复真相源（CVO 拍板） | 2026-07-20 |
 
 ## Timeline
 
