@@ -99,9 +99,7 @@ cat <<EOF
 
 接下来在左上 pane 启动调度器（详见 README.md「启动调度器」）:
   cd $CWD
-  export TEAM_HOME=$TEAM_HOME TEAM_ROLE=orchestrator
-  pi --append-system-prompt "\$(cat \$TEAM_HOME/orchestrator/PROMPT.md)" \\
-     --skill "\$TEAM_HOME/orchestrator/skills/herdr"
+  $TEAM_HOME/bin/orchestrator.sh
 
 提示: 角色 pane 首次在新 repo 启动 pi 可能弹项目信任确认，切过去按一次即可。
 EOF
