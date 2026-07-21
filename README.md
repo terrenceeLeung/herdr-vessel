@@ -66,9 +66,16 @@ herdr integration install pi
 herdr integration status   # 确认 pi: current
 ```
 
-### 3. herdr skill：编排专用定制版，只挂给 orchestrator
+### 3. herdr skill：vendor 上游原版，使用政策在 PROMPT.md
 
-`orchestrator/skills/herdr/SKILL.md` 是 **herdr-vessel 定制版**（不是 herdr 上游 skill）：只教四件事——查花名册/状态、发任务（`pane run`）、等完成事件（`wait agent-status`）、从 outbox 取内容。**明确不教读屏幕**（内容通道不走终端，见 F001 KD-8）。启动 orchestrator 时用 `--skill` 显式挂载；角色 pane 的启动命令里没有它——**物理隔离，不是纪律隔离**。
+`orchestrator/skills/herdr/SKILL.md` 是 **herdr 上游 skill 的原样 vendor**（完整的 API 参考，含拓扑/读屏等全部能力）。orchestrator 日常只用其中一个子集（花名册/注入/等待），**使用政策写在 `orchestrator/PROMPT.md`**（"Herdr usage policy"：调度路径不读屏幕、内容走 outbox、拓扑操作升船长）——分层原则：skill 是手册，政策在 prompt。角色 pane 的启动命令里没有它——**物理隔离，不是纪律隔离**。
+
+herdr 升级后刷新 vendor：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ogulcancelik/herdr/master/SKILL.md \
+  -o ~/projects/herdr-vessel/orchestrator/skills/herdr/SKILL.md
+```
 
 ### 4. Herdr 配置（可选）
 

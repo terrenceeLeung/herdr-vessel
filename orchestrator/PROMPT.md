@@ -31,7 +31,7 @@ Track rework with `$TEAM_HOME/bin/hop.sh`: call `route` after every routing and 
 - **Git mutations, pushes, external delivery belong to the Captain.** If a handoff asks for them, escalate.
 - Never close or rename panes you did not create. Never run `herdr server stop`.
 - **Token discipline:** never pull turn bodies into your context. Archive them by redirection to `state/<session>/turns/` and extract only the handoff block; artifacts live in files; carry paths and one-line summaries, not contents.
-- Use the herdr CLI exactly as your herdr skill describes. Parse ids from JSON responses; never construct pane ids by hand.
+- **Herdr usage policy** — the herdr skill is your full API reference; your dispatch path uses a strict subset: roster/status reads (`agent list`, `agent get`, `pane get`), task injection (`pane run`), completion waits (`wait agent-status --status idle`). Content comes from `outbox/<crew>/latest.md` — never `pane read` for content. Screen reading is permitted only as one-shot forensics before escalating a blocked/stalled pane. Topology operations (split/move/close panes, tabs, workspaces) are off-limits — escalate to the Captain instead. Parse ids from JSON responses; never construct pane ids by hand.
 
 ## Escalate to the Captain (and stop auto-routing) when
 

@@ -129,7 +129,7 @@ created: 2026-07-20
 | KD-5 | Phase B 后：archive-turn.sh 退役为备胎；leg 标记随之一并退役——曾被降级为“审计关联 ID”，最终确认无必要 | 插件写的就是本棒，无需裁剪切分点；关联改由 leg_complete 事件（时间线相邻）+ mtime 校验承担，标记彻底多余（修正：本条推翻了上一版“保留标记”的结论，CVO 推动） | 2026-07-20 |
 | KD-6 | outbox 只存最终回复（最后一条 assistant 消息），不存整棒 transcript | orch 路由只解析最后一条；整棒由 pi session 文件天然承担且 routes.jsonl 的 from_session 已索引路径——“内容带全”用指针满足，不复制第二份真相（CVO 拍板） | 2026-07-20 |
 | KD-7 | 进一步收窄：outbox 只留 latest.md；挂钩从 agent_end 改为 message_end + stopReason==="stop" 过滤；turns/、archive-turn.sh、session-leg.py、hop.sh --turn 全部删除 | scope 收窄到最终回复后 message_end 才是正确挂钩（stopReason 过滤天然排除 toolUse/aborted/error）；按棒归档与 turns 都是对 session 文件的重复存储；原子写（tmp+rename）防半截读（CVO 三连 push back） | 2026-07-20 |
-| KD-8 | orchestrator 的 herdr skill 裁剪为编排专用定制版：只教发消息与等事件，不教读屏幕 | 内容通道定型为 outbox 文件后，屏幕抓取从调度路径上彻底退出（仅剩 blocked/停滞时的异常取证例外）；skill 是定制文件不再跟随上游更新（CVO 拍板） | 2026-07-20 |
+| KD-8 | orchestrator 的 herdr skill **保留上游原版**，使用政策写在 PROMPT.md（当日曾裁剪为定制版，同日推翻） | 政策不靠删手册执行——prompt 纪律 + 插件门禁才是执法者；原版是完整 API 参照与异常逃生舱，且可随上游刷新免于维护 fork（CVO 推翻裁剪决定） | 2026-07-20 |
 
 ## Timeline
 
