@@ -66,7 +66,7 @@ created: 2026-07-20
 
 ### Phase B: 角色侧 handoff 校验 + outbox 精确导出
 
-`agent_end` 时取 `event.messages` 最后一条 assistant 消息文本，做两件事：
+角色侧插件监听 `message_end`，做两件事（同一挂钩、同一个 message 对象）：
 
 **B1. outbox 导出（精确内容层）**。监听 `message_end`，筛选 `role=assistant && stopReason==="stop" && 含 text`（toolUse 中间态 / aborted / error 被过滤器天然排除）——命中即最终回复，**原子写**（tmp + rename）覆盖 `$TEAM_HOME/state/<herdr-session>/outbox/<crew>/latest.md`。**只有 latest.md，无按棒归档**：历史最终回复由 pi session 文件承担，`routes.jsonl` 事件的 `from_session` 已索引路径（KD-7）。同一刻向 `routes.jsonl` 追加 `{"type":"leg_complete","role":...,"ts":...}`。插件从 `HERDR_SOCKET_PATH` 推导 session 名。orchestrator 读 `latest.md`（校验 mtime ≥ 注入时间防陈旧件）。**不写 turns/ 目录；`bin/archive-turn.sh`、`bin/session-leg.py`、hop.sh 的 `--turn` 参数随本 phase 一并删除**（git 历史可捞）。时序保障：`message_end` 早于 `agent_end`，更远先于 integration 的 idle 上报（`agent_end` + 250ms 防抖）。**注入不再携带 leg 标记**（KD-5）。
 
@@ -83,7 +83,7 @@ created: 2026-07-20
 
 ### Phase A（Orchestrator 侧三件套）
 - [ ] AC-A1: 目标 pane 为 blocked/working 时，`herdr pane run` 被 block 且 reason 可读；idle 时放行
-- [ ] AC-A2: orchestrator 不调 hop.sh 的情况下完成一次路由，routes.jsonl 出现对应 route/rework 记录且字段完整（from/to/pane/session/turn）
+- [ ] AC-A2: orchestrator 不调 hop.sh 的情况下完成一次路由，routes.jsonl 出现对应 route/rework 记录且字段完整（from/to/pane/session）
 - [ ] AC-A3: 计数 ≥20 后注入类调用被 block；`hop.sh reset` 后恢复
 - [ ] AC-A4: `TEAM_ROLE` 未设置时插件零行为（普通 pi 会话无感知）
 
@@ -113,10 +113,10 @@ created: 2026-07-20
 
 | # | 问题 | 状态 |
 |---|------|------|
-| OQ-1 | 边表（哪些边算回边）放哪：插件内嵌 vs 机器可读文件（如 roster.conf 加列）vs 解析 TEAM.md？ | ⬜ 未定 |
-| OQ-2 | 船长输入的 reset 能否也自动化（检测交互输入事件）？还是保持 orchestrator 调 hop.sh reset 的纪律？ | ⬜ 未定 |
-| OQ-3 | 角色侧校验用 `agent_end` 还是 `agent_settled`？（后者排除 auto-retry 干扰但消息可达性待验证） | ⬜ 未定 |
-| OQ-4 | git 红线（git push/交付命令）是否也在 Phase B 对角色 pane 做硬拦截？ | ⬜ 未定 |
+| OQ-1 | 边表（哪些边算回边）放哪：插件内嵌 vs 机器可读文件（如 roster.conf 加列）vs 解析 TEAM.md？ | ✅ 已定：`routing.conf`（机器可读，插件与文档唯一拓扑真相源） |
+| OQ-2 | 船长输入的 reset 能否也自动化（检测交互输入事件）？还是保持 orchestrator 调 hop.sh reset 的纪律？ | ✅ 已定：插件挂 `input` 事件自动 reset（已实现） |
+| OQ-3 | 角色侧校验用 `agent_end` 还是 `agent_settled`？（后者排除 auto-retry 干扰但消息可达性待验证） | ✅ 已定：都不是——`message_end` + `stopReason==="stop"` 过滤（KD-7，优于两个候选） |
+| OQ-4 | git 红线（git push/交付命令）是否也在 Phase B 对角色 pane 做硬拦截？ | ✅ 已定：窄拦 `git push`（已实现于角色模式） |
 
 ## Key Decisions
 
@@ -137,6 +137,8 @@ created: 2026-07-20
 |------|------|
 | 2026-07-20 | 立项（spec 落盘） |
 | 2026-07-20 | CVO 口头放行（"按你说的来"），Phase A 代码落地并推送（commit cae0ca5），待真机验收 AC-A1~A4 |
+| 2026-07-20 | Phase A 验收：修 label 解析/接球竞态/done-idle 等待；熔断语义待 CVO 拍板 |
+| 2026-07-20 | Phase B 设计定稿（KD-5~KD-8：弃 leg 标记、latest-only、message_end 挂钩、删 turns 机制、skill 保留上游原版） |
 
 ## Review Gate
 
